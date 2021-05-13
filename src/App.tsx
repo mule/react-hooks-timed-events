@@ -1,47 +1,40 @@
-import React, {useState, useEffect} from 'react';
-import { getJSDocDeprecatedTag } from 'typescript';
+import React, {useState} from 'react';
+import { CSSTransition } from 'react-transition-group';
 import useInterval from './useInterval'
+import {Notification, INotificationProps} from './Notification'
 import './App.css';
-
-export interface Notification {
-  Created : Date,
-  Content : string
-}
+import { couldStartTrivia } from 'typescript';
 
 
 function App() {
 
   const [currentInput, setCurrentInput] = useState('');
-  const [notifications , setNotifications] = useState<Notification[]>([]);
+  const [notifications , setNotifications] = useState<INotificationProps[]>([]);
 
   useInterval(() => {
-    var now = new Date();
-    var newNotifications = notifications.filter(notification => (now.getTime() - notification.Created.getTime()) < 10000);
+
+    console.log('tick');
+  
+    var newNotifications = notifications.map(setVisibility);
     setNotifications(newNotifications);
-  }, 1000);  
+
+  }, 1000);
+  
+  
+  const setVisibility = (notificationProps : INotificationProps) => {
+    var now = new Date();
+    var isVisible = (now.getTime() - notificationProps.Created.getTime() < notificationProps.VisibilityTime);
+    notificationProps.Visible = isVisible;
+    return notificationProps;
+  }
 
   const onKeyUp = (e : React.KeyboardEvent<HTMLInputElement>) => {
-    console.log('Key pressed:' + e.key)
     if (e.key === "Enter") {
-      var newNotification : Notification = {Created: new Date(), Content: currentInput};
+      var newNotification : INotificationProps = {Created: new Date(), Content: currentInput, Visible: true, VisibilityTime: 10000};
       var newNotifications = notifications.concat(newNotification);
       setNotifications(newNotifications);
       setCurrentInput('');
     }
-  }
-
-  const renderNotification = (notification : Notification) => {
-    return(
-
-      <article className="notification">
-        <div>{notification.Created.toLocaleString()}</div>
-        <div>
-          {notification.Content}
-        </div>
-      </article>
-
-    );
-
   }
 
   return (
@@ -53,7 +46,9 @@ function App() {
         </div>
         <div className="column">
           <ul>
-            {notifications.map( (notification, i)  => <li key={'notification' +i} className="my-1">{renderNotification(notification)}</li>  ) }
+            {notifications.map( (notificationProps, i)  => <li key={'notification' +i} className="my-1">
+              <Notification {...notificationProps} />
+            </li>  ) }
           </ul>
         </div>
       </div>
